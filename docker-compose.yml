@@ -17,7 +17,12 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.onboarding.rule=Host(`onboarding.aiinvention.tech`)"
+      - "traefik.http.routers.onboarding.entrypoints=websecure"
+      - "traefik.http.routers.onboarding.tls.certresolver=letsencrypt"
       - "traefik.http.services.onboarding.loadbalancer.server.port=3000"
+      - "traefik.http.routers.onboarding_http.rule=Host(`onboarding.aiinvention.tech`)"
+      - "traefik.http.routers.onboarding_http.entrypoints=web"
+      - "traefik.http.routers.onboarding_http.middlewares=redirect-to-https"
     healthcheck:
       # `/` is the public landing page — reachable without a session.
       test:
