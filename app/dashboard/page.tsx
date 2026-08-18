@@ -3,6 +3,7 @@ import { Users, FileText, Rocket, ShieldCheck, Inbox } from "lucide-react";
 import { getLeads, getProposals, getDeliveryPlans, getAuditLog } from "@/lib/db";
 import { formatBudget, formatDate, priorityPillClass } from "@/lib/format";
 import NewLeadForm from "@/components/NewLeadForm";
+import LogoutButton from "@/components/LogoutButton";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,11 @@ export default function DashboardPage() {
           Client Onboarding Agent
         </div>
         <div className="nav-links">
+          <span className="admin-badge">
+            <ShieldCheck size={12} /> admin
+          </span>
           <Link href="/">Home</Link>
+          <LogoutButton />
         </div>
       </nav>
 

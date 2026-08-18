@@ -516,6 +516,123 @@ tr:last-child td {
   }
 }
 
+/* --- Login (Phase 4) --- */
+
+.login-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  backdrop-filter: blur(8px);
+  padding: 32px 28px;
+  text-align: center;
+}
+
+.login-brand {
+  justify-content: center;
+  margin-bottom: 22px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.login-card h1 {
+  font-size: 21px;
+  letter-spacing: -0.01em;
+  margin: 0 0 8px;
+}
+
+.login-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin: 0 0 24px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+}
+
+.login-form label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-faint);
+}
+
+.login-form input {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 11px 13px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  width: 100%;
+}
+
+.login-form input:focus {
+  outline: none;
+  border-color: var(--cyan);
+}
+
+.login-form button {
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.login-form .form-msg {
+  padding: 2px 0 0;
+}
+
+.login-back {
+  display: inline-block;
+  margin-top: 22px;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.login-back:hover {
+  color: var(--cyan);
+}
+
+.admin-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--teal);
+  border: 1px solid rgba(46, 242, 195, 0.25);
+  background: rgba(46, 242, 195, 0.08);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.logout-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.logout-btn:hover {
+  color: var(--cyan);
+}
+
 footer {
   padding: 32px 0 48px;
   text-align: center;

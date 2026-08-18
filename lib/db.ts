@@ -87,6 +87,21 @@ function logAction(
     .run(actor, action, target, detail, nowIso());
 }
 
+/**
+ * Audit row for an authentication event (Phase 4). Thin wrapper over the same
+ * logAction used by every other mutation — auth attempts land in agent_log
+ * alongside agent actions so the dashboard's audit card renders them with no
+ * special-casing. `detail` must never carry the submitted password.
+ */
+export function logAuthEvent(action: string, target: string | null, detail: string | null): void {
+  const conn = open();
+  try {
+    logAction(conn, "admin", action, target, detail);
+  } finally {
+    conn.close();
+  }
+}
+
 export interface Lead {
   id: number;
   name: string;
