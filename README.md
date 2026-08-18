@@ -40,8 +40,8 @@ data/        # SQLite DBs (gitignored, never committed)
 git clone https://github.com/faraz-jb/client-onboarding-agent.git
 cd client-onboarding-agent
 
-# 2. Environment (Phase 1+)
-cp .env.example .env   # fill GEMINI_API_KEY
+# 2. Environment — required, the app fails closed without these
+cp .env.example .env
 
 # 3. Python venv (Phase 1+)
 python -m venv .venv
@@ -63,17 +63,39 @@ npm run dev      # http://localhost:3000 — landing page + /dashboard
 npm run build    # production build (standalone output)
 ```
 
+Open <http://localhost:3000/login> — log in with `ADMIN_PASSWORD` to reach `/dashboard`.
+
+### Required environment variables
+
+Fill all six in `.env` after copying the template. Missing auth vars mean auth
+fails closed: every protected route denies and the dashboard is unreachable.
+
+| Variable | Purpose |
+| --- | --- |
+| `GEMINI_API_KEY` | Real Gemini API key |
+| `GEMINI_BRAIN_MODEL` | Brain-tier model — the default in `.env.example` is fine |
+| `GEMINI_FAST_MODEL` | Fast-tier model — the default in `.env.example` is fine |
+| `ADMIN_PASSWORD` | Admin login password |
+| `ADMIN_PASSWORD_SALT` | Random hex, ≥16 chars — generate once, then leave it alone |
+| `SESSION_SECRET` | Random hex, ≥32 chars — generate once; rotating it invalidates all sessions |
+
+`ADMIN_PASSWORD_SALT` and `SESSION_SECRET` can be generated with: `openssl rand -hex 32`
+
 ## Security
 
 - Real API keys live **only** in local `.env` — never committed (`.env`, `.env.*` gitignored).
 - Real client data never enters the repo — `data/` and `*.db` are gitignored.
 - `.env.example` ships with empty values as a template.
+- Dashboard and agent-trigger endpoints require admin login (scrypt password + HMAC-signed session cookie, httpOnly).
 
 ## Phases
 
 - **Phase 0** — project skeleton
 - **Phase 1** — ADK agent core: lead intake, qualification, proposal builder, delivery handoff
-- **Phase 2** — Next.js 15 dark-theme dashboard: landing page, live leads/proposals/delivery/audit views, lead intake API (current)
+- **Phase 2** — Next.js 15 dark-theme dashboard + API routes
+- **Phase 3** — live Gemini pipeline: classify → proposal writer → delivery plan → notify (Telegram)
+- **Phase 4** — security hardening: admin auth (scrypt + HMAC session), rate limiting, audit log
+- **Phase 5** — VPS deploy + demo (next)
 
 ## Hackathon
 
