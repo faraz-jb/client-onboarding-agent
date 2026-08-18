@@ -2,7 +2,7 @@
 
 **AI agent that removes client onboarding friction — lead to proposal to delivery.**
 
-Built for the [Google All Things Agentic Hackathon](https://lablab.ai/event/all-things-agentic) — $180K prize pool, deadline **Aug 31 2026**.
+Built for the [Google All Things Agentic Hackathon](https://allthingsagentichackathon.devpost.com) — $180K prize pool, deadline **Aug 31 2026**.
 
 ## Stack
 
@@ -43,10 +43,17 @@ cp .env.example .env   # fill GEMINI_API_KEY
 
 # 3. Python venv (Phase 1+)
 python -m venv .venv
-pip install google-adk google-genai
+.venv/Scripts/activate   # Windows; use `source .venv/bin/activate` on macOS/Linux
+pip install -r requirements.txt
 
-# 4. Run agent (Phase 1+)
-python -m agent.agent
+# 4. Run tests (no API key needed)
+python -m agent.test_agent
+
+# 5. Run agent — dry-run (structure only, no Gemini call)
+python -m agent.agent --lead '{"name": "Test Client", "email": "test@example.com", "service": "AI Website", "budget": 5000}' --dry-run
+
+# 6. Run agent — live (needs GEMINI_API_KEY in .env)
+python -m agent.agent --lead '{"name": "Test Client", "email": "test@example.com", "service": "AI Website", "budget": 5000}'
 ```
 
 ## Security
@@ -57,10 +64,10 @@ python -m agent.agent
 
 ## Phases
 
-- **Phase 0** — project skeleton (current)
-- **Phase 1** — ADK agent core: lead intake, qualification, proposal builder, delivery handoff
+- **Phase 0** — project skeleton
+- **Phase 1** — ADK agent core: lead intake, qualification, proposal builder, delivery handoff (current)
 - **Phase 2** — Next.js 15 dark-theme dashboard
 
 ## Hackathon
 
-[Google All Things Agentic Hackathon](https://lablab.ai/event/all-things-agentic) — LabLab x Google.
+[Google All Things Agentic Hackathon](https://allthingsagentichackathon.devpost.com)
