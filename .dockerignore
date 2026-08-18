@@ -1,0 +1,36 @@
+# Keep the build context small, and keep secrets and host-specific binaries
+# out of the image entirely.
+
+.git
+.gitignore
+
+# Node
+node_modules
+.next
+npm-debug.log*
+
+# Python — the host .venv is Windows-built; the image creates its own Linux one
+.venv
+venv
+__pycache__
+**/__pycache__
+*.py[cod]
+
+# Real client data never enters an image layer
+data
+*.db
+*.sqlite
+*.sqlite3
+
+# Secrets: exclude every .env variant, then re-admit the empty template that
+# the Dockerfile copies in as documentation.
+.env
+.env.*
+!.env.example
+
+# Local noise
+*.log
+.DS_Store
+Thumbs.db
+.idea
+.vscode

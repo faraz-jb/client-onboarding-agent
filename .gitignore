@@ -11,6 +11,9 @@ build/
 .env
 .env.local
 .env.*.local
+.env.production
+!.env.example
+!.env.production.example
 
 # Local data / databases — never committed
 data/
