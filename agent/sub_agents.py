@@ -6,10 +6,16 @@ model. Both model ids come from env only — never hardcoded.
 """
 
 import os
+from pathlib import Path
 
+from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
 
-FAST_MODEL = os.environ.get("GEMINI_FAST_MODEL", "gemini-3-flash")
+# Load .env BEFORE reading FAST_MODEL — agent.py imports this module before its
+# own load_dotenv() runs, so without this the env-configured fast model is ignored.
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+
+FAST_MODEL = os.environ.get("GEMINI_FAST_MODEL", "gemini-3.5-flash")
 
 # Factories, not module-level singletons: ADK sets a parent pointer on a
 # sub-agent the moment it's attached to a parent LlmAgent, so a shared

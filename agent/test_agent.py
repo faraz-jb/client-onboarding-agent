@@ -20,11 +20,25 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     from agent import agent as agent_module
     from agent import memory
-    from agent.tools import create_delivery_plan, draft_proposal, intake_lead, notify_client
+    from agent.tools import (
+        create_delivery_plan,
+        draft_proposal,
+        finalize_proposal,
+        intake_lead,
+        notify_client,
+        update_lead_priority,
+    )
 else:
     from . import agent as agent_module
     from . import memory
-    from .tools import create_delivery_plan, draft_proposal, intake_lead, notify_client
+    from .tools import (
+        create_delivery_plan,
+        draft_proposal,
+        finalize_proposal,
+        intake_lead,
+        notify_client,
+        update_lead_priority,
+    )
 
 EXPECTED_TABLES = {"leads", "proposals", "delivery_plans", "agent_log"}
 
@@ -99,12 +113,48 @@ def test_notify_client_empty_message(lead_id: int) -> None:
     assert result["ok"] is False, result
 
 
+def test_update_lead_priority(lead_id: int) -> None:
+    result = update_lead_priority(lead_id, "HOT")
+    assert result["ok"] is True, result
+    assert result["priority"] == "hot"
+
+    conn = memory.init_db()
+    try:
+        lead = memory.get_lead(conn, lead_id)
+    finally:
+        conn.close()
+    assert lead["priority"] == "hot"
+
+
+def test_update_lead_priority_invalid(lead_id: int) -> None:
+    result = update_lead_priority(lead_id, "urgent")
+    assert result["ok"] is False, result
+
+
+def test_finalize_proposal(lead_id: int) -> None:
+    proposal = draft_proposal(lead_id)
+    assert proposal["ok"] is True, proposal
+    result = finalize_proposal(
+        proposal["proposal_id"],
+        overview="test_ final overview",
+        scope="test_ final scope",
+        timeline="test_ final timeline",
+        pricing="test_ final pricing",
+    )
+    assert result["ok"] is True, result
+
+
+def test_finalize_proposal_missing() -> None:
+    result = finalize_proposal(999_999_999, overview="x", scope="x", timeline="x", pricing="x")
+    assert result["ok"] is False, result
+
+
 def test_agent_structure_without_api_key() -> None:
     saved_key = os.environ.pop("GEMINI_API_KEY", None)
     try:
         agent = agent_module.build_agent()
         assert agent.name == "client_onboarding_agent"
-        assert len(agent.tools) == 4
+        assert len(agent.tools) == 6
         assert len(agent.sub_agents) == 2
         assert {sa.name for sa in agent.sub_agents} == {"classify_lead_agent", "extract_info_agent"}
     finally:
@@ -118,12 +168,54 @@ def test_run_dry() -> None:
         result = agent_module.run_dry(
             '{"name": "test_Dry Run Client", "email": "test_dryrun@example.com", "service": "AI Chatbot"}'
         )
-        assert result["tool_count"] == 4
+        assert result["tool_count"] == 6
         assert result["sub_agent_count"] == 2
         assert result["intake_result"]["ok"] is True
     finally:
         if saved_key is not None:
             os.environ["GEMINI_API_KEY"] = saved_key
+
+
+def test_process_lead_offline() -> None:
+    """No GEMINI_API_KEY in this test process, so process_lead runs the offline path."""
+    saved_key = os.environ.pop("GEMINI_API_KEY", None)
+    try:
+        intake = intake_lead(
+            {
+                "name": "test_Process Lead Client",
+                "email": "test_processlead@example.com",
+                "service": "AI Website",
+                "budget": 8000,
+            }
+        )
+        assert intake["ok"] is True, intake
+        lead_id = intake["lead_id"]
+
+        result = agent_module.process_lead(lead_id)
+        assert result["ok"] is True, result
+        assert result["mode"] == "offline"
+        assert result["priority"] == "hot"  # budget >= 3000 and a real service -> hot heuristic
+        assert result["proposal_source"] == "skeleton"
+        assert isinstance(result["proposal_id"], int)
+        assert isinstance(result["delivery_plan_id"], int)
+        assert result["notify"]["ok"] is True
+        assert result["notify"]["status"] == "logged_stub"  # no Telegram credentials in test env
+
+        conn = memory.init_db()
+        try:
+            lead = memory.get_lead(conn, lead_id)
+            assert lead["status"] == "proposal_ready"
+            assert lead["priority"] == "hot"
+        finally:
+            conn.close()
+    finally:
+        if saved_key is not None:
+            os.environ["GEMINI_API_KEY"] = saved_key
+
+
+def test_process_lead_missing() -> None:
+    result = agent_module.process_lead(999_999_999)
+    assert result["ok"] is False, result
 
 
 def test_audit_log_has_entries() -> None:
@@ -145,8 +237,14 @@ def run_all() -> None:
     test_create_delivery_plan(lead_id)
     test_notify_client(lead_id)
     test_notify_client_empty_message(lead_id)
+    test_update_lead_priority(lead_id)
+    test_update_lead_priority_invalid(lead_id)
+    test_finalize_proposal(lead_id)
+    test_finalize_proposal_missing()
     test_agent_structure_without_api_key()
     test_run_dry()
+    test_process_lead_offline()
+    test_process_lead_missing()
     test_audit_log_has_entries()
 
 

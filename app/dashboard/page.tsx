@@ -121,7 +121,7 @@ export default function DashboardPage() {
                         <div className="section-badges">
                           {(["overview", "scope", "timeline", "pricing"] as const).map((section) =>
                             p[section] ? (
-                              <span className="section-tag" key={section}>
+                              <span className="section-tag" key={section} title={p[section]}>
                                 {section}
                               </span>
                             ) : null,

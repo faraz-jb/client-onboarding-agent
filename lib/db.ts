@@ -146,6 +146,42 @@ export function getLeads(): Lead[] {
   }
 }
 
+export function getLeadById(id: number): Lead | null {
+  const conn = open();
+  try {
+    const row = conn
+      .prepare("SELECT id, name, email, service, budget, priority, status, created_at FROM leads WHERE id = ?")
+      .get(id) as unknown as Lead | undefined;
+    return row ?? null;
+  } finally {
+    conn.close();
+  }
+}
+
+export interface MarkProcessingResult {
+  ok: boolean;
+  errors?: string[];
+}
+
+// Called by POST /api/agent/process-lead right before it spawns the Python
+// agent subprocess — flips the lead into "processing" so the dashboard/poll
+// picks it up immediately, and writes the audit row for the trigger itself.
+export function markLeadProcessing(id: number): MarkProcessingResult {
+  const conn = open();
+  try {
+    const lead = conn.prepare("SELECT id FROM leads WHERE id = ?").get(id);
+    if (!lead) {
+      logAction(conn, "dashboard_api", "process_lead_rejected", String(id), "lead not found");
+      return { ok: false, errors: [`lead ${id} not found`] };
+    }
+    conn.prepare("UPDATE leads SET status = 'processing' WHERE id = ?").run(id);
+    logAction(conn, "dashboard_api", "process_lead_triggered", String(id), null);
+    return { ok: true };
+  } finally {
+    conn.close();
+  }
+}
+
 export function getProposals(): Proposal[] {
   const conn = open();
   try {

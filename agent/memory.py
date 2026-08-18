@@ -151,3 +151,33 @@ def insert_delivery_plan(conn: sqlite3.Connection, lead_id: int, steps: list[dic
     )
     conn.commit()
     return cur.lastrowid
+
+
+def update_lead_status(conn: sqlite3.Connection, lead_id: int, status: str) -> bool:
+    """Move a lead through new -> processing -> classified -> proposal_ready (or error)."""
+    cur = conn.execute("UPDATE leads SET status = ? WHERE id = ?", (status, lead_id))
+    conn.commit()
+    return cur.rowcount > 0
+
+
+def update_lead_priority(conn: sqlite3.Connection, lead_id: int, priority: str) -> bool:
+    cur = conn.execute("UPDATE leads SET priority = ? WHERE id = ?", (priority, lead_id))
+    conn.commit()
+    return cur.rowcount > 0
+
+
+def update_proposal(
+    conn: sqlite3.Connection,
+    proposal_id: int,
+    overview: str,
+    scope: str,
+    timeline: str,
+    pricing: str,
+    status: str = "ready",
+) -> bool:
+    cur = conn.execute(
+        "UPDATE proposals SET overview = ?, scope = ?, timeline = ?, pricing = ?, status = ? WHERE id = ?",
+        (overview, scope, timeline, pricing, status, proposal_id),
+    )
+    conn.commit()
+    return cur.rowcount > 0

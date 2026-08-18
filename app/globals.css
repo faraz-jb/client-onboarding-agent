@@ -363,13 +363,13 @@ tr:last-child td {
 }
 
 .pill-hot {
-  background: rgba(246, 199, 106, 0.14);
-  color: var(--gold);
+  background: rgba(241, 106, 106, 0.12);
+  color: #f5a15a;
 }
 
 .pill-warm {
-  background: rgba(34, 211, 238, 0.12);
-  color: var(--cyan);
+  background: rgba(46, 242, 195, 0.12);
+  color: var(--teal);
 }
 
 .pill-cold {
@@ -494,6 +494,26 @@ tr:last-child td {
 
 .form-msg.success {
   color: var(--teal);
+}
+
+.form-msg.live-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--cyan);
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 footer {
