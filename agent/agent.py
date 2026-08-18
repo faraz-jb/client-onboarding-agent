@@ -237,8 +237,15 @@ def process_lead(lead_id: int, force_dry_run: bool = False) -> dict[str, Any]:
     finally:
         conn.close()
 
-    # 1. Classify.
-    priority = asyncio.run(_classify_lead_live(lead)) if use_live else _classify_lead_offline(lead)
+    # 1. Classify — live Gemini when available, offline heuristic as a
+    # hard fallback so a temporary 503/overload never crashes the pipeline.
+    if use_live:
+        try:
+            priority = asyncio.run(_classify_lead_live(lead))
+        except Exception:
+            priority = _classify_lead_offline(lead)
+    else:
+        priority = _classify_lead_offline(lead)
     priority_result = update_lead_priority(lead_id, priority)
     if not priority_result["ok"]:
         return priority_result
@@ -254,7 +261,13 @@ def process_lead(lead_id: int, force_dry_run: bool = False) -> dict[str, Any]:
     if not proposal_result["ok"]:
         return proposal_result
 
-    expanded = asyncio.run(_expand_proposal_live(lead, priority)) if use_live else None
+    if use_live:
+        try:
+            expanded = asyncio.run(_expand_proposal_live(lead, priority))
+        except Exception:
+            expanded = None
+    else:
+        expanded = None
     final_content = expanded or proposal_result["proposal"]
     finalize_result = finalize_proposal(proposal_result["proposal_id"], **final_content)
     if not finalize_result["ok"]:
