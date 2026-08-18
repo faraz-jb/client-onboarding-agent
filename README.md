@@ -26,9 +26,11 @@ removing the manual friction of onboarding: intake → qualification → proposa
 ## Project Layout
 
 ```
-agent/    # ADK agent core (Phase 1 — Gemini model, tools, workflow)
-app/      # Next.js 15 dashboard (Phase 2)
-data/     # SQLite DBs (gitignored, never committed)
+agent/       # ADK agent core (Phase 1 — Gemini model, tools, workflow)
+app/         # Next.js 15 App Router — landing page, dashboard, API routes (Phase 2)
+components/  # Client-side UI components (Phase 2)
+lib/         # SQLite data access (node:sqlite) + formatting helpers (Phase 2)
+data/        # SQLite DBs (gitignored, never committed)
 ```
 
 ## Setup
@@ -54,6 +56,11 @@ python -m agent.agent --lead '{"name": "Test Client", "email": "test@example.com
 
 # 6. Run agent — live (needs GEMINI_API_KEY in .env)
 python -m agent.agent --lead '{"name": "Test Client", "email": "test@example.com", "service": "AI Website", "budget": 5000}'
+
+# 7. Dashboard UI (Phase 2+) — requires Node 22+ (node:sqlite)
+npm install
+npm run dev      # http://localhost:3000 — landing page + /dashboard
+npm run build    # production build (standalone output)
 ```
 
 ## Security
@@ -65,8 +72,8 @@ python -m agent.agent --lead '{"name": "Test Client", "email": "test@example.com
 ## Phases
 
 - **Phase 0** — project skeleton
-- **Phase 1** — ADK agent core: lead intake, qualification, proposal builder, delivery handoff (current)
-- **Phase 2** — Next.js 15 dark-theme dashboard
+- **Phase 1** — ADK agent core: lead intake, qualification, proposal builder, delivery handoff
+- **Phase 2** — Next.js 15 dark-theme dashboard: landing page, live leads/proposals/delivery/audit views, lead intake API (current)
 
 ## Hackathon
 

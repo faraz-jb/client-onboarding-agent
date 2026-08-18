@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS leads (
     email TEXT NOT NULL,
     service TEXT NOT NULL,
     budget REAL,
+    priority TEXT,
     raw_json TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'new',
     created_at TEXT NOT NULL
@@ -70,11 +71,20 @@ def get_connection(db_path: Optional[Path] = None) -> sqlite3.Connection:
     return conn
 
 
+def _migrate(conn: sqlite3.Connection) -> None:
+    """Additive schema fixes for DBs created before a column existed. Idempotent."""
+    cols = {row["name"] for row in conn.execute("PRAGMA table_info(leads)").fetchall()}
+    if "priority" not in cols:
+        conn.execute("ALTER TABLE leads ADD COLUMN priority TEXT")
+        conn.commit()
+
+
 def init_db(db_path: Optional[Path] = None) -> sqlite3.Connection:
     """Create all tables if missing and return an open connection. Idempotent."""
     conn = get_connection(db_path)
     conn.executescript(SCHEMA)
     conn.commit()
+    _migrate(conn)
     return conn
 
 
