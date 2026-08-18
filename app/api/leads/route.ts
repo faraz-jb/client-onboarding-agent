@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getLeads, insertLead } from "@/lib/db";
+import { spawnAgentForLead } from "@/lib/run-agent";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -26,5 +27,11 @@ export async function POST(request: NextRequest) {
   if (!result.ok) {
     return NextResponse.json(result, { status: 400 });
   }
+
+  // Auto-process: classify -> proposal -> delivery -> notify (fire-and-forget).
+  // Every lead source (receptionist webhook, website form) flows through here,
+  // so a new lead is automatically classified and a proposal drafted.
+  spawnAgentForLead(result.lead.id);
+
   return NextResponse.json(result, { status: 201 });
 }

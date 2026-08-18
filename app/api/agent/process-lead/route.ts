@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
-import path from "node:path";
 import { markLeadProcessing } from "@/lib/db";
+import { spawnAgentForLead } from "@/lib/run-agent";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -29,33 +27,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(marked, { status: 404 });
   }
 
-  const projectRoot = process.cwd();
-  const pythonPath =
-    process.platform === "win32"
-      ? path.join(projectRoot, ".venv", "Scripts", "python.exe")
-      : path.join(projectRoot, ".venv", "bin", "python");
-
-  if (!existsSync(pythonPath)) {
+  const spawned = spawnAgentForLead(leadId);
+  if (!spawned) {
     return NextResponse.json(
-      { ok: false, errors: [`Python venv not found at ${pythonPath} — run: python -m venv .venv`] },
+      { ok: false, errors: ["Python venv not found — run: python -m venv .venv"] },
       { status: 500 },
     );
   }
-
-  const child = spawn(pythonPath, ["-m", "agent.agent", "--lead-id", String(leadId)], {
-    cwd: projectRoot,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-
-  child.stdout.on("data", (chunk: Buffer) => {
-    console.log(`[process-lead:${leadId}]`, chunk.toString().trim());
-  });
-  child.stderr.on("data", (chunk: Buffer) => {
-    console.error(`[process-lead:${leadId}]`, chunk.toString().trim());
-  });
-  child.on("error", (err) => {
-    console.error(`[process-lead:${leadId}] failed to spawn`, err);
-  });
 
   return NextResponse.json({ ok: true, lead_id: leadId, status: "processing" }, { status: 202 });
 }
