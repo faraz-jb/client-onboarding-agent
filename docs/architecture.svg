@@ -1,0 +1,187 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 860" width="1200" height="860" role="img" aria-label="Client Onboarding Agent system architecture">
+  <title>Client Onboarding Agent — System Architecture</title>
+  <desc>Next.js 15 frontend and API routes, an auth middleware gate, the Python Google ADK agent core with six tools and three Gemini sub-agents, SQLite persistence, Telegram notifications, and the container deployment topology.</desc>
+
+  <style>
+    .bg      { fill: #03050a; }
+    .grid    { stroke: #22d3ee; stroke-opacity: 0.05; stroke-width: 1; }
+    .title   { fill: #eaf4f7; font: 600 24px system-ui, -apple-system, "Segoe UI", sans-serif; }
+    .sub     { fill: #8ba2b0; font: 400 13px system-ui, -apple-system, "Segoe UI", sans-serif; }
+    .layer   { fill: #0a1a2f; fill-opacity: 0.55; stroke: #22d3ee; stroke-opacity: 0.16; rx: 12; }
+    .layerlbl{ fill: #5a6f7c; font: 600 10px system-ui, sans-serif; letter-spacing: 1.4px; }
+    .box     { fill: #0a1a2f; fill-opacity: 0.9; stroke: #22d3ee; stroke-opacity: 0.32; rx: 8; }
+    .boxfast { fill: #0a1a2f; fill-opacity: 0.9; stroke: #2ef2c3; stroke-opacity: 0.4; rx: 8; }
+    .boxext  { fill: #0a1a2f; fill-opacity: 0.9; stroke: #f6c76a; stroke-opacity: 0.4; rx: 8; }
+    .h       { fill: #eaf4f7; font: 600 13px system-ui, sans-serif; }
+    .hc      { fill: #22d3ee; font: 600 13px system-ui, sans-serif; }
+    .ht      { fill: #2ef2c3; font: 600 13px system-ui, sans-serif; }
+    .hg      { fill: #f6c76a; font: 600 13px system-ui, sans-serif; }
+    .t       { fill: #8ba2b0; font: 400 11px system-ui, sans-serif; }
+    .tm      { fill: #5a6f7c; font: 400 10px ui-monospace, "SF Mono", Menlo, monospace; }
+    .flow    { stroke: #22d3ee; stroke-opacity: 0.55; stroke-width: 1.6; fill: none; marker-end: url(#a); }
+    .flowt   { stroke: #2ef2c3; stroke-opacity: 0.5; stroke-width: 1.6; fill: none; marker-end: url(#at); }
+    .flowg   { stroke: #f6c76a; stroke-opacity: 0.45; stroke-width: 1.6; fill: none; marker-end: url(#ag); }
+    .flowlbl { fill: #5a6f7c; font: 400 10px system-ui, sans-serif; }
+    .lock    { fill: #f6c76a; font: 600 10px system-ui, sans-serif; }
+  </style>
+
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#22d3ee" fill-opacity="0.65"/>
+    </marker>
+    <marker id="at" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2ef2c3" fill-opacity="0.6"/>
+    </marker>
+    <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#f6c76a" fill-opacity="0.6"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1200" height="860"/>
+  <g class="grid">
+    <path d="M0 48H1200M0 96H1200M0 144H1200M0 192H1200M0 240H1200M0 288H1200M0 336H1200M0 384H1200M0 432H1200M0 480H1200M0 528H1200M0 576H1200M0 624H1200M0 672H1200M0 720H1200M0 768H1200M0 816H1200"/>
+    <path d="M48 0V860M96 0V860M144 0V860M192 0V860M240 0V860M288 0V860M336 0V860M384 0V860M432 0V860M480 0V860M528 0V860M576 0V860M624 0V860M672 0V860M720 0V860M768 0V860M816 0V860M864 0V860M912 0V860M960 0V860M1008 0V860M1056 0V860M1104 0V860M1152 0V860"/>
+  </g>
+
+  <text class="title" x="40" y="48">Client Onboarding Agent — System Architecture</text>
+  <text class="sub" x="40" y="72">Lead intake → Gemini qualification → proposal → delivery plan → notify, with a full audit trail</text>
+
+  <!-- ============ CLIENTS ============ -->
+  <rect class="layer" x="40" y="100" width="1120" height="80"/>
+  <text class="layerlbl" x="56" y="120">CLIENTS</text>
+
+  <rect class="box" x="72" y="126" width="240" height="40"/>
+  <text class="hc" x="88" y="143">Public visitor</text>
+  <text class="t" x="88" y="158">Landing page + lead intake form</text>
+
+  <rect class="box" x="336" y="126" width="240" height="40"/>
+  <text class="hc" x="352" y="143">Admin / judge</text>
+  <text class="t" x="352" y="158">Dashboard — password login</text>
+
+  <text class="tm" x="616" y="145">Browser · dark theme UI (#03050a / #22d3ee)</text>
+  <text class="tm" x="616" y="160">Mobile responsive · 320 / 768 / 1024</text>
+
+  <!-- ============ NEXT.JS ============ -->
+  <rect class="layer" x="40" y="200" width="1120" height="248"/>
+  <text class="layerlbl" x="56" y="220">NEXT.JS 15 — APP ROUTER (node server.js, standalone)</text>
+
+  <!-- middleware gate -->
+  <rect class="boxext" x="72" y="234" width="1056" height="46"/>
+  <text class="hg" x="88" y="253">Edge middleware — auth gate</text>
+  <text class="t" x="88" y="269">HMAC-SHA256 session cookie (Web Crypto) · per-IP rate limiting · fails closed when unconfigured</text>
+  <text class="lock" x="960" y="253">PUBLIC ▸ / · /login</text>
+  <text class="lock" x="960" y="269">POST /api/leads (10/60s)</text>
+
+  <!-- pages -->
+  <rect class="box" x="72" y="300" width="256" height="60"/>
+  <text class="hc" x="88" y="320">Pages</text>
+  <text class="tm" x="88" y="336">/            landing (public)</text>
+  <text class="tm" x="88" y="350">/login  /dashboard 🔒</text>
+
+  <!-- public api -->
+  <rect class="boxfast" x="344" y="300" width="256" height="60"/>
+  <text class="ht" x="360" y="320">Public API</text>
+  <text class="tm" x="360" y="336">POST /api/leads</text>
+  <text class="tm" x="360" y="350">POST /api/auth/login</text>
+
+  <!-- protected api -->
+  <rect class="box" x="616" y="300" width="256" height="60"/>
+  <text class="hc" x="632" y="320">Protected API 🔒</text>
+  <text class="tm" x="632" y="336">GET /api/leads · /proposals</text>
+  <text class="tm" x="632" y="350">/delivery · /audit · /auth/logout</text>
+
+  <!-- trigger -->
+  <rect class="boxext" x="888" y="300" width="240" height="60"/>
+  <text class="hg" x="904" y="320">Agent trigger 🔒</text>
+  <text class="tm" x="904" y="336">POST /api/agent/</text>
+  <text class="tm" x="904" y="350">process-lead</text>
+
+  <!-- data access -->
+  <rect class="box" x="72" y="380" width="1056" height="50"/>
+  <text class="hc" x="88" y="400">lib/db.ts — node:sqlite (DatabaseSync), no ORM</text>
+  <text class="t" x="88" y="417">Every mutation writes an agent_log audit row · same schema contract as agent/memory.py</text>
+
+  <!-- ============ ADK AGENT ============ -->
+  <rect class="layer" x="40" y="468" width="1120" height="232"/>
+  <text class="layerlbl" x="56" y="488">PYTHON AGENT — GOOGLE ADK (spawned per lead: .venv/bin/python -m agent.agent --lead-id N)</text>
+
+  <!-- pipeline -->
+  <rect class="box" x="72" y="502" width="1056" height="52"/>
+  <text class="hc" x="88" y="522">Pipeline — agent/agent.py :: process_lead()</text>
+  <text class="t" x="88" y="539">classify → update priority → draft proposal → finalize copy → delivery plan → notify   ·   status: new → processing → classified → proposal_ready</text>
+
+  <!-- tools -->
+  <rect class="box" x="72" y="570" width="620" height="112"/>
+  <text class="hc" x="88" y="590">Tools — agent/tools.py (ADK FunctionTool ×6)</text>
+  <text class="tm" x="88" y="612">intake_lead</text>
+  <text class="tm" x="88" y="630">update_lead_priority</text>
+  <text class="tm" x="88" y="648">draft_proposal</text>
+  <text class="tm" x="300" y="612">finalize_proposal</text>
+  <text class="tm" x="300" y="630">create_delivery_plan</text>
+  <text class="tm" x="300" y="648">notify_client</text>
+  <text class="t" x="88" y="670">Each validates its own input and writes an audit row — success or rejection</text>
+
+  <!-- sub agents -->
+  <rect class="boxfast" x="708" y="570" width="420" height="112"/>
+  <text class="ht" x="724" y="590">Sub-agents — ADK LlmAgent ×3</text>
+  <text class="tm" x="724" y="612">classify_lead_agent      → GEMINI_FAST_MODEL</text>
+  <text class="tm" x="724" y="630">extract_info_agent       → GEMINI_FAST_MODEL</text>
+  <text class="tm" x="724" y="648">proposal_writer_agent → GEMINI_BRAIN_MODEL</text>
+  <text class="t" x="724" y="670">Offline heuristic fallback when no API key is set</text>
+
+  <!-- ============ EXTERNAL / STORAGE ============ -->
+  <rect class="layer" x="40" y="720" width="1120" height="100"/>
+  <text class="layerlbl" x="56" y="740">PERSISTENCE &amp; EXTERNAL SERVICES</text>
+
+  <rect class="boxext" x="72" y="752" width="300" height="54"/>
+  <text class="hg" x="88" y="772">Gemini API</text>
+  <text class="t" x="88" y="789">Fast tier: classify / extract · Brain tier: proposal copy</text>
+
+  <rect class="box" x="388" y="752" width="400" height="54"/>
+  <text class="hc" x="404" y="772">SQLite — data/onboarding.db</text>
+  <text class="tm" x="404" y="789">leads · proposals · delivery_plans · agent_log</text>
+
+  <rect class="boxext" x="804" y="752" width="324" height="54"/>
+  <text class="hg" x="820" y="772">Telegram Bot API (outbound)</text>
+  <text class="t" x="820" y="789">notify_client · console-log fallback + audit row</text>
+
+  <!-- ============ FLOWS ============ -->
+  <!-- clients -> middleware -->
+  <path class="flow" d="M192 166 V232"/>
+  <path class="flow" d="M456 166 V232"/>
+
+  <!-- middleware -> rows -->
+  <path class="flow" d="M200 280 V298"/>
+  <path class="flow" d="M472 280 V298"/>
+  <path class="flow" d="M744 280 V298"/>
+  <path class="flow" d="M1008 280 V298"/>
+
+  <!-- api -> db layer -->
+  <path class="flow" d="M472 360 V378"/>
+  <path class="flow" d="M744 360 V378"/>
+
+  <!-- trigger -> agent (spawn) -->
+  <path class="flowg" d="M1008 360 V466 H900 V500"/>
+  <text class="flowlbl" x="1016" y="416">spawn subprocess</text>
+  <text class="flowlbl" x="1016" y="430">fire-and-forget, 202</text>
+
+  <!-- pipeline -> tools / subagents -->
+  <path class="flow" d="M382 554 V568"/>
+  <path class="flowt" d="M918 554 V568"/>
+
+  <!-- subagents -> gemini -->
+  <path class="flowg" d="M760 682 V742 H240 V750"/>
+  <text class="flowlbl" x="470" y="700">Gemini calls (classify · proposal copy)</text>
+
+  <!-- tools -> sqlite -->
+  <path class="flow" d="M382 682 V750"/>
+  <text class="flowlbl" x="392" y="716">read / write + audit</text>
+
+  <!-- tools -> telegram -->
+  <path class="flowg" d="M660 682 V730 H960 V750"/>
+  <text class="flowlbl" x="700" y="722">notify</text>
+
+  <!-- lib/db -> sqlite -->
+  <path class="flow" d="M120 430 V520 H60 V760 H386" stroke-dasharray="4 4"/>
+  <text class="flowlbl" x="66" y="512">same DB file</text>
+</svg>
