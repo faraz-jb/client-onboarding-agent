@@ -46,7 +46,9 @@ proposal took four days.
 ### The solution
 
 An agent pipeline that carries a lead from first contact to a delivery-ready
-proposal without a human in the loop:
+proposal without a human in the loop. **It fires automatically the moment a lead
+is stored** — public form, webhook, any source — so nobody has to remember to
+kick anything off:
 
 1. **Intake** — the public form validates and stores the lead.
 2. **Classify** — a fast Gemini sub-agent scores priority as hot / warm / cold.
@@ -60,8 +62,12 @@ is inspectable, not a black box.
 
 ### Key features
 
-- **Autonomous multi-step pipeline** — one lead id in, a classified lead, a
+- **Fully autonomous trigger** — any lead reaching the system, from any source,
+  starts the pipeline on its own. No operator action, no queue to watch.
+- **Autonomous multi-step pipeline** — one lead in, a classified lead, a
   written proposal, a delivery plan, and a sent notification out.
+- **Degrades instead of breaking** — a Gemini 503, quota error, or overload
+  falls back to the deterministic path mid-run; the lead still completes.
 - **Two-tier model placement** — a fast model for classification and
   extraction, a brain-tier model for proposal writing. Neither is hardcoded;
   both come from environment configuration.
@@ -100,10 +106,11 @@ is inspectable, not a black box.
 ### Architecture summary
 
 Two runtimes in one deployable unit. Next.js 15 serves the UI and API; a Python
-ADK agent is spawned per lead by `POST /api/agent/process-lead`, which validates
-the id, marks the lead `processing`, and returns 202 so the model work never
-blocks a request. Both runtimes share one SQLite file and one audit trail. A
-single Edge middleware gates every protected route.
+ADK agent runs per lead as a spawned subprocess, so model work never blocks an
+HTTP response. `POST /api/leads` spawns it automatically for every new lead and
+`POST /api/agent/process-lead` re-runs an existing one — both through the same
+helper. Both runtimes share one SQLite file and one audit trail, and a single
+Edge middleware gates every protected route.
 
 Full diagram and data model: [`docs/architecture.md`](./architecture.md).
 
@@ -141,6 +148,12 @@ The interesting problems were not the agent logic.
   `COPY` away from being baked into a public image layer. Found by inspecting
   the build output rather than trusting it. Fixed in the Dockerfile
   unconditionally instead of relying on `.dockerignore` staying correct.
+- **A live model endpoint is not a dependency you can assume.** The first real
+  Gemini runs hit 503s and quota limits, which crashed the pipeline mid-lead and
+  left rows half-written. The fix was to treat the offline heuristic not as a
+  no-key fallback but as the failure path for every live call — so a lead always
+  ends with a priority, a proposal, and a delivery plan regardless of what the
+  API does.
 - **A rate limiter's honest scope matters.** The in-memory limiter keeps
   separate counters per runtime and per instance. It blunts brute-force from one
   client; it is not a distributed quota, and documenting that is more useful
@@ -156,7 +169,8 @@ Live demo: https://onboarding.aiinvention.tech
 1. Open the landing page and submit a lead on the public form
    (any name / email / service / budget). No login needed.
 
-2. Watch it process live — the form polls the lead through
+2. The agent starts on its own the moment the lead is stored — nothing
+   else to click. Watch the form poll it through
    processing → classified → proposal_ready as the agent runs.
 
 3. Sign in to see the agent's work:

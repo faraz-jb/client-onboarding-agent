@@ -19,7 +19,8 @@ then waits — someone has to judge whether it is worth pursuing, write a propos
 that reflects what the client actually asked for, sketch a delivery plan, and
 reply before the lead goes cold.
 
-This agent closes that gap. A lead submitted on the public form is carried all
+This agent closes that gap. **The moment a lead is stored — from the public
+form, a webhook, any source — the agent runs automatically**, carrying it all
 the way to a delivery-ready proposal with no human in the loop:
 
 1. **Intake** — validate and store the lead.
@@ -34,8 +35,10 @@ a first-class view on the dashboard. The agent's work is inspectable, not a
 black box.
 
 **Without a Gemini API key the pipeline still runs**, using a deterministic
-heuristic path. The test suite and a full agent dry-run need no key and no
-network.
+heuristic path — and if a live Gemini call fails mid-run (503, quota, overload)
+it degrades to that same path rather than breaking. A lead always ends with a
+priority, a proposal, a delivery plan, and an audit trail. The test suite and a
+full agent dry-run need no key and no network.
 
 ---
 
@@ -44,10 +47,10 @@ network.
 ![System architecture](./docs/architecture.svg)
 
 Two runtimes ship as one deployable unit: **Next.js 15** serves the UI and API,
-and a **Python Google ADK** agent is spawned per lead by
-`POST /api/agent/process-lead` — which validates, marks the lead `processing`,
-and returns `202` so model work never blocks a request. Both share one SQLite
-file and one audit trail.
+and a **Python Google ADK** agent runs per lead as a spawned subprocess, so
+model work never blocks an HTTP response. `POST /api/leads` triggers it
+automatically on every new lead; `POST /api/agent/process-lead` re-runs an
+existing one. Both share one SQLite file and one audit trail.
 
 📄 **Full diagram, data model, model placement, and security design:
 [`docs/architecture.md`](./docs/architecture.md)**
@@ -58,7 +61,7 @@ file and one audit trail.
 agent/       # Python ADK agent — tools, sub-agents, pipeline, SQLite access
 app/         # Next.js App Router — landing, dashboard, API routes
 components/  # Client components (lead form with live status, logout)
-lib/         # node:sqlite data access, auth, password, rate limiting
+lib/         # node:sqlite data access, agent spawn helper, auth, rate limiting
 scripts/     # seed_demo.py — demo data for the dashboard
 docs/        # architecture, Cloud Run guide, Devpost copy
 data/        # SQLite database (gitignored — never committed)

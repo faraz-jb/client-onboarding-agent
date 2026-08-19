@@ -81,7 +81,7 @@
   <!-- public api -->
   <rect class="boxfast" x="344" y="300" width="256" height="60"/>
   <text class="ht" x="360" y="320">Public API</text>
-  <text class="tm" x="360" y="336">POST /api/leads</text>
+  <text class="tm" x="360" y="336">POST /api/leads → auto-runs agent</text>
   <text class="tm" x="360" y="350">POST /api/auth/login</text>
 
   <!-- protected api -->
@@ -92,14 +92,19 @@
 
   <!-- trigger -->
   <rect class="boxext" x="888" y="300" width="240" height="60"/>
-  <text class="hg" x="904" y="320">Agent trigger 🔒</text>
+  <text class="hg" x="904" y="320">Manual re-trigger 🔒</text>
   <text class="tm" x="904" y="336">POST /api/agent/</text>
   <text class="tm" x="904" y="350">process-lead</text>
 
   <!-- data access -->
-  <rect class="box" x="72" y="380" width="1056" height="50"/>
+  <rect class="box" x="72" y="380" width="700" height="50"/>
   <text class="hc" x="88" y="400">lib/db.ts — node:sqlite (DatabaseSync), no ORM</text>
   <text class="t" x="88" y="417">Every mutation writes an agent_log audit row · same schema contract as agent/memory.py</text>
+
+  <!-- spawn helper -->
+  <rect class="boxext" x="788" y="380" width="340" height="50"/>
+  <text class="hg" x="804" y="400">lib/run-agent.ts</text>
+  <text class="t" x="804" y="417">spawnAgentForLead() — shared by both entry points</text>
 
   <!-- ============ ADK AGENT ============ -->
   <rect class="layer" x="40" y="468" width="1120" height="232"/>
@@ -160,10 +165,17 @@
   <path class="flow" d="M472 360 V378"/>
   <path class="flow" d="M744 360 V378"/>
 
-  <!-- trigger -> agent (spawn) -->
-  <path class="flowg" d="M1008 360 V466 H900 V500"/>
-  <text class="flowlbl" x="1016" y="416">spawn subprocess</text>
-  <text class="flowlbl" x="1016" y="430">fire-and-forget, 202</text>
+  <!-- public api -> spawn helper (auto-process every new lead) -->
+  <path class="flowt" d="M600 330 H780"/>
+  <text class="flowlbl" x="606" y="324">auto-process every new lead</text>
+
+  <!-- manual re-trigger -> spawn helper -->
+  <path class="flowg" d="M1008 360 V378"/>
+
+  <!-- spawn helper -> agent -->
+  <path class="flowg" d="M958 430 V466 H900 V500"/>
+  <text class="flowlbl" x="966" y="450">spawn subprocess</text>
+  <text class="flowlbl" x="966" y="464">fire-and-forget</text>
 
   <!-- pipeline -> tools / subagents -->
   <path class="flow" d="M382 554 V568"/>

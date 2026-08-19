@@ -25,7 +25,8 @@ flowchart TB
         pages["Pages<br/>/ (public) · /login · /dashboard 🔒"]
         pubapi["Public API<br/>POST /api/leads · POST /api/auth/login"]
         protapi["Protected API 🔒<br/>GET /api/leads · /proposals · /delivery · /audit · /auth/logout"]
-        trigger["Agent trigger 🔒<br/>POST /api/agent/process-lead"]
+        trigger["Manual re-trigger 🔒<br/>POST /api/agent/process-lead"]
+        runagent["lib/run-agent.ts<br/><i>spawnAgentForLead() — shared spawn helper</i>"]
         dbts["lib/db.ts — node:sqlite (DatabaseSync)<br/><i>no ORM; every mutation writes an audit row</i>"]
     end
 
@@ -50,7 +51,9 @@ flowchart TB
     protapi --> dbts
     dbts --> sqlite
 
-    trigger -.->|"spawn subprocess<br/>fire-and-forget, HTTP 202"| pipeline
+    pubapi -->|"auto-process every new lead"| runagent
+    trigger -->|"manual re-run"| runagent
+    runagent -.->|"spawn subprocess<br/>fire-and-forget"| pipeline
     pipeline --> tools
     pipeline --> subagents
     subagents -->|"classify · write proposal copy"| gemini
@@ -62,25 +65,42 @@ flowchart TB
 
 ## Request → agent handoff
 
-The API never runs model calls inline. `POST /api/agent/process-lead` validates
-the id, flips the lead to `processing`, spawns the agent, and returns **202**
-immediately; the browser then polls `GET /api/leads` for status.
+The API never runs model calls inline. Every lead is processed automatically the
+moment it is stored — whatever the source — and the model work happens in a
+spawned subprocess so it never blocks the HTTP response.
 
 ```
-POST /api/agent/process-lead {lead_id}
-  → markLeadProcessing()                       status: processing
-  → spawn <cwd>/.venv/bin/python -m agent.agent --lead-id N
-  → 202 Accepted                               (client polls from here)
+POST /api/leads {name, email, service, budget}     ← public form, webhook, any source
+  → insertLead()                                     status: new  (+ audit row)
+  → spawnAgentForLead(id)                            fire-and-forget
+  → 201 Created                                      (client polls from here)
 
-agent process_lead(N):
+POST /api/agent/process-lead {lead_id}   🔒        ← manual re-run of an existing lead
+  → markLeadProcessing()                             status: processing
+  → spawnAgentForLead(id)
+  → 202 Accepted
+
+agent process_lead(N):                             ← .venv/bin/python -m agent.agent --lead-id N
   1. classify         classify_lead_agent (fast) ── or offline heuristic
-  2. update_lead_priority                      status: classified
+  2. update_lead_priority                          status: classified
   3. draft_proposal   → skeleton row
   4. proposal_writer_agent (brain) → strict JSON copy
-     finalize_proposal                         status: proposal_ready
+     finalize_proposal                             status: proposal_ready
   5. create_delivery_plan   discovery → build → review → handover
   6. notify_client    Telegram, or console-log fallback
 ```
+
+Both entry points share `spawnAgentForLead()` in `lib/run-agent.ts`, so the
+autonomous path and the manual re-run are the same code. The browser tracks
+progress by polling `GET /api/leads` until the lead reaches `proposal_ready`.
+
+### Resilience
+
+The live Gemini calls are wrapped so a transient failure degrades rather than
+breaks: if classification raises (503, overload, quota), the pipeline falls back
+to the offline heuristic; if proposal writing raises, the persisted skeleton
+copy stands. A lead always ends with a priority, a proposal, a delivery plan,
+and an audit trail — with or without a working model endpoint.
 
 `process.cwd()` is the project root for that spawn, which is why `.venv/` and
 `agent/` must sit beside `server.js` — see [Deployment](#deployment-topology).
