@@ -1,0 +1,186 @@
+# Groundedness evals for the onboarding knowledge base.
+#
+# What this grades: RETRIEVAL, not generation. The provider returns the raw
+# text of the chunks agent/rag.py retrieves, and every assertion is a
+# deterministic `contains` against a fact that is literally written in
+# data/knowledge/. No LLM judge, no network dependency in the assertion path —
+# a failure here means the fact never reached the model, which is the
+# root-cause failure a groundedness suite exists to catch.
+#
+# Every case passes under BOTH retrieval backends (Chroma vector search and the
+# keyword tf-idf fallback), so the suite is meaningful in CI with no API key.
+#
+# Run: npm run rag
+
+description: RAG groundedness — retrieved context must contain the real facts
+
+providers:
+  - id: file://../providers/rag-provider.js
+    label: rag-retriever
+    config:
+      topK: 3
+
+# The provider reads the question from the `query` var; the prompt is a
+# formality that keeps the promptfoo report readable.
+prompts:
+  - '{{query}}'
+
+defaultTest:
+  assert:
+    # Retrieval that returns nothing can never be grounded — this guards every
+    # case against a silently empty context passing a weak assertion.
+    - type: javascript
+      value: output.trim().length > 0
+
+tests:
+  # --- Pricing ----------------------------------------------------------
+  - description: chatbot setup fee
+    vars:
+      query: How much does an AI chatbot cost to set up?
+    assert:
+      - type: contains
+        value: $179
+
+  - description: chatbot monthly fee
+    vars:
+      query: What is the monthly fee for a chatbot?
+    assert:
+      - type: contains
+        value: $49/mo
+
+  - description: automation workflow setup fee
+    vars:
+      query: How much is an automation workflow?
+    assert:
+      - type: contains
+        value: $200
+
+  - description: website setup fee
+    vars:
+      query: What does a website cost?
+    assert:
+      - type: contains
+        value: $299
+
+  - description: website hosting is the $19/mo tier, not $49/mo
+    vars:
+      query: How much is website hosting per month?
+    assert:
+      - type: contains
+        value: $19/mo
+
+  - description: full bundle price
+    vars:
+      query: How much is the full bundle with everything included?
+    assert:
+      - type: contains
+        value: $999
+
+  # --- Services ---------------------------------------------------------
+  - description: chatbot deployment channels
+    vars:
+      query: Which channels can the chatbot be deployed on?
+    assert:
+      - type: contains
+        value: WhatsApp
+      - type: contains
+        value: Telegram
+
+  - description: chatbot does lead capture around the clock
+    vars:
+      query: Does the chatbot capture leads and run around the clock?
+    assert:
+      - type: contains
+        value: lead capture
+      - type: contains
+        value: 24/7
+
+  - description: white-label is available to agencies
+    vars:
+      query: Do you offer white-label for agencies and resellers?
+    assert:
+      - type: icontains
+        value: white-label
+
+  # --- Process ----------------------------------------------------------
+  - description: onboarding is a six-step process
+    vars:
+      query: What are the steps in your onboarding process?
+    assert:
+      - type: icontains
+        value: Six steps
+
+  - description: scope is confirmed and quoted before any build starts
+    vars:
+      query: Do you confirm the scope and send a quote before building?
+    assert:
+      - type: contains
+        value: Scope Confirmation
+
+  - description: typical build window
+    vars:
+      query: How long is the build phase?
+    assert:
+      - type: contains
+        value: 3-7 days
+
+  - description: chatbot delivery timeline
+    vars:
+      query: How long does it take to build a chatbot?
+    assert:
+      - type: contains
+        value: 3-5 days
+
+  - description: automation delivery timeline
+    vars:
+      query: How long does an automation workflow take to deliver?
+    assert:
+      - type: contains
+        value: 5-7 days
+
+  - description: ongoing support scope after launch
+    vars:
+      query: What is included in ongoing support after launch?
+    assert:
+      - type: icontains
+        value: maintenance and minor updates
+
+  # --- Policies / FAQ ---------------------------------------------------
+  - description: refund policy
+    vars:
+      query: What is your refund policy?
+    assert:
+      - type: icontains
+        value: 7-day money-back
+
+  - description: accepted payment methods
+    vars:
+      query: What payment methods do you accept?
+    assert:
+      - type: icontains
+        value: Bank transfer
+      - type: icontains
+        value: card
+
+  - description: support hours
+    vars:
+      query: What are your support hours?
+    assert:
+      - type: icontains
+        value: 10am to 7pm
+      - type: icontains
+        value: Monday to Saturday
+
+  - description: two free revision rounds are included
+    vars:
+      query: How many revision rounds are included?
+    assert:
+      - type: icontains
+        value: Two free revision rounds
+
+  - description: the client owns their data
+    vars:
+      query: Who owns the data the system collects?
+    assert:
+      - type: icontains
+        value: client owns all data

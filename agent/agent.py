@@ -23,13 +23,14 @@ from google.adk.tools import FunctionTool
 from google.genai import types
 
 from . import memory
-from .sub_agents import build_classify_lead_agent, build_extract_info_agent
+from .sub_agents import build_classify_lead_agent, build_extract_info_agent, with_knowledge
 from .tools import (
     create_delivery_plan,
     draft_proposal,
     finalize_proposal,
     intake_lead,
     notify_client,
+    search_knowledge,
     update_lead_priority,
 )
 
@@ -66,7 +67,10 @@ def build_agent() -> LlmAgent:
             "they did not provide — then call finalize_proposal to persist it; "
             "(4) call create_delivery_plan for the handoff steps; "
             "(5) call notify_client to confirm receipt with the client. "
-            "Always validate before acting."
+            "Always validate before acting. Whenever the lead asks about "
+            "price, what we offer, timelines, or policy, call search_knowledge "
+            "first and answer only from what it returns — never quote a figure "
+            "from memory."
         ),
         tools=[
             FunctionTool(intake_lead),
@@ -75,6 +79,7 @@ def build_agent() -> LlmAgent:
             FunctionTool(finalize_proposal),
             FunctionTool(create_delivery_plan),
             FunctionTool(notify_client),
+            FunctionTool(search_knowledge),
         ],
         sub_agents=[build_classify_lead_agent(), build_extract_info_agent()],
     )
@@ -183,6 +188,9 @@ async def _classify_lead_live(lead: dict[str, Any]) -> str:
         f"Lead details — name: {lead['name']}, service: {lead['service']}, "
         f"budget: {lead['budget']}, raw intake: {lead['raw_json']}. Classify this lead."
     )
+    # Ground the fit judgement in what we actually sell and charge — a $200
+    # budget reads very differently once the model can see the real price list.
+    prompt = with_knowledge(prompt, f"{lead['service']} {lead['raw_json']}")
     text = (await _run_single_agent(agent, prompt, "classify_lead")).strip().lower()
     if text in _VALID_PRIORITIES:
         return text
@@ -199,6 +207,10 @@ async def _expand_proposal_live(lead: dict[str, Any], priority: str) -> Optional
         f"Lead — name: {lead['name']}, service: {lead['service']}, budget: {lead['budget']}, "
         f"priority: {priority}. Write the proposal JSON now."
     )
+    # Proposals quote real prices and timelines, so retrieve unconditionally
+    # here rather than through the keyword gate — every proposal is a pricing
+    # question whether or not the lead phrased it as one.
+    prompt = with_knowledge(prompt, f"{lead['service']} pricing process timeline")
     text = await _run_single_agent(agent, prompt, "proposal_writer")
     try:
         data = json.loads(_strip_code_fence(text))

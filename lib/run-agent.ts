@@ -17,20 +17,41 @@ export function spawnAgentForLead(leadId: number): boolean {
 
   if (!existsSync(pythonPath)) return false;
 
-  const child = spawn(pythonPath, ["-m", "agent.agent", "--lead-id", String(leadId)], {
-    cwd: projectRoot,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+  // RAG status is logged, never enforced. The Python side degrades to a plain
+  // prompt when agent/rag.py or data/knowledge/ is missing, so a knowledge
+  // base that is absent here is a downgrade in answer quality — not a reason
+  // to withhold the agent run.
+  const ragReady =
+    existsSync(path.join(projectRoot, "agent", "rag.py")) &&
+    existsSync(path.join(projectRoot, "data", "knowledge"));
+  console.log(
+    `[rag:${leadId}]`,
+    ragReady
+      ? "knowledge base available — prompts will be knowledge-grounded"
+      : "knowledge base unavailable — agent runs with the plain prompt"
+  );
 
-  child.stdout.on("data", (chunk: Buffer) => {
-    console.log(`[agent:${leadId}]`, chunk.toString().trim());
-  });
-  child.stderr.on("data", (chunk: Buffer) => {
-    console.error(`[agent:${leadId}]`, chunk.toString().trim());
-  });
-  child.on("error", (err) => {
-    console.error(`[agent:${leadId}] failed to spawn`, err);
-  });
+  try {
+    const child = spawn(pythonPath, ["-m", "agent.agent", "--lead-id", String(leadId)], {
+      cwd: projectRoot,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
 
-  return true;
+    child.stdout.on("data", (chunk: Buffer) => {
+      console.log(`[agent:${leadId}]`, chunk.toString().trim());
+    });
+    child.stderr.on("data", (chunk: Buffer) => {
+      console.error(`[agent:${leadId}]`, chunk.toString().trim());
+    });
+    child.on("error", (err) => {
+      console.error(`[agent:${leadId}] failed to spawn`, err);
+    });
+
+    return true;
+  } catch (err) {
+    // spawn() throws synchronously on some platform/permission failures —
+    // this route is called from a live API handler, so it must not throw.
+    console.error(`[agent:${leadId}] spawn threw`, err);
+    return false;
+  }
 }

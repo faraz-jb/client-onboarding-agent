@@ -15,7 +15,7 @@ import urllib.error
 import urllib.request
 from typing import Any, Optional
 
-from . import memory
+from . import memory, rag
 
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 _ACTOR = "client_onboarding_agent"
@@ -308,3 +308,37 @@ def notify_client(lead_id: int, message: str) -> dict[str, Any]:
         return {"ok": True, "status": status, "lead_id": lead_id, "message": message}
     finally:
         conn.close()
+
+
+def search_knowledge(query: str) -> dict[str, Any]:
+    """Search the AI Invention knowledge base (pricing, services, onboarding
+    process, FAQ) and return the passages that answer a client's question.
+
+    Use this whenever a lead asks about cost, what we offer, how long
+    onboarding takes, support, refunds, or payment — answer from the returned
+    chunks, never from memory.
+
+    Args:
+        query: the client's question, e.g. "how much does a chatbot cost?".
+
+    Returns:
+        Always {"ok": True, "query": str, "results": [{text, source, heading,
+        score, backend}, ...], "count": int}. Retrieval degrades to a keyword
+        index when no embedding key is configured, so this tool never fails
+        the workflow — an empty results list just means nothing matched.
+    """
+    query = str(query or "").strip()
+    results = rag.search_knowledge(query) if query else []
+    conn = memory.init_db()
+    try:
+        memory.log_action(
+            conn,
+            _ACTOR,
+            "search_knowledge",
+            target=query[:120],
+            detail=f"{len(results)} chunks"
+            + (f" via {results[0]['backend']}" if results else ""),
+        )
+    finally:
+        conn.close()
+    return {"ok": True, "query": query, "results": results, "count": len(results)}

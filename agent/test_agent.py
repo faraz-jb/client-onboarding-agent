@@ -154,7 +154,8 @@ def test_agent_structure_without_api_key() -> None:
     try:
         agent = agent_module.build_agent()
         assert agent.name == "client_onboarding_agent"
-        assert len(agent.tools) == 6
+        # 6 workflow tools + search_knowledge (RAG).
+        assert len(agent.tools) == 7
         assert len(agent.sub_agents) == 2
         assert {sa.name for sa in agent.sub_agents} == {"classify_lead_agent", "extract_info_agent"}
     finally:
@@ -168,7 +169,7 @@ def test_run_dry() -> None:
         result = agent_module.run_dry(
             '{"name": "test_Dry Run Client", "email": "test_dryrun@example.com", "service": "AI Chatbot"}'
         )
-        assert result["tool_count"] == 6
+        assert result["tool_count"] == 7
         assert result["sub_agent_count"] == 2
         assert result["intake_result"]["ok"] is True
     finally:

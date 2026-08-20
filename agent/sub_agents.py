@@ -7,6 +7,7 @@ model. Both model ids come from env only — never hardcoded.
 
 import os
 from pathlib import Path
+from typing import Optional
 
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
@@ -54,4 +55,67 @@ def build_extract_info_agent() -> LlmAgent:
             "a value that isn't present in the source text."
         ),
         output_key="extracted_lead_info",
+    )
+
+
+# --- Knowledge injection -------------------------------------------------
+#
+# Lightweight gate, not a classifier: retrieval only runs when the lead text
+# actually touches something the knowledge base covers (pricing, services,
+# process, support/FAQ). Leads that mention none of these get the plain
+# prompt, so we spend no retrieval work — and take no failure risk — on
+# prompts that could not benefit from it.
+
+_KNOWLEDGE_TRIGGERS = (
+    "pricing",
+    "cost",
+    "price",
+    "plan",
+    "service",
+    "process",
+    "support",
+    "refund",
+    "payment",
+    "how",
+    "faq",
+)
+
+
+def needs_knowledge(query: str) -> bool:
+    """True when the lead text touches a topic the knowledge base covers."""
+    lowered = str(query or "").lower()
+    return any(trigger in lowered for trigger in _KNOWLEDGE_TRIGGERS)
+
+
+def with_knowledge(prompt: str, query: Optional[str] = None) -> str:
+    """Prefix a prompt with retrieved knowledge when the gate fires.
+
+    Args:
+        prompt: the prompt that would otherwise be sent as-is.
+        query: text to retrieve against — defaults to the prompt itself.
+
+    Returns:
+        The prompt unchanged when the gate does not fire, retrieval returns
+        nothing, or the RAG module is unavailable; otherwise the prompt with a
+        [Knowledge]...[/Knowledge] block and grounding instruction prepended.
+        Never raises: this runs in a live pipeline and knowledge is an
+        enhancement, so any failure degrades to the plain prompt.
+    """
+    text = query if query is not None else prompt
+    if not needs_knowledge(text):
+        return prompt
+    try:
+        from .rag import build_knowledge_context
+
+        context = build_knowledge_context(text)
+    except Exception:
+        return prompt
+    if not context:
+        return prompt
+    return (
+        f"{context}\n\n"
+        "Use the knowledge above for any claim about our pricing, services, "
+        "process, or policies — it is authoritative. Never state a price or "
+        "timeline that does not appear in it.\n\n"
+        f"{prompt}"
     )

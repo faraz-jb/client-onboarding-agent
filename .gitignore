@@ -15,8 +15,13 @@ build/
 !.env.example
 !.env.production.example
 
-# Local data / databases — never committed
-data/
+# Local data / databases — never committed.
+# data/* ignores real client data (SQLite DBs, the Chroma vector store), but
+# data/knowledge/ is re-included: those markdown docs are the committed RAG
+# source corpus, not client data.
+data/*
+!data/knowledge/
+data/knowledge_db/
 *.db
 *.sqlite
 *.sqlite3
@@ -27,6 +32,10 @@ __pycache__/
 .venv/
 venv/
 *.egg-info/
+
+# Promptfoo eval state — repo-local run history/cache written by
+# `npm run rag`. Regenerated on every run; never committed.
+.promptfoo/
 
 # Logs
 *.log
